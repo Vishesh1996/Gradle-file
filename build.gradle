@@ -1,0 +1,78 @@
+plugins {
+    id 'org.springframework.boot' version '2.2.1.RELEASE'
+    id 'io.spring.dependency-management' version '1.0.8.RELEASE'
+    id 'java'
+}
+
+group = 'com.volk'
+version = '0.0.1-SNAPSHOT'
+sourceCompatibility = '1.8'
+
+repositories {
+    mavenCentral()
+}
+
+//Configures the classpath and the source and resource directories of the integrationTest task.
+sourceSets {
+    //Declaring this source set creates compile time and runtime configurations for it.
+    integrationTest {
+        java {
+            compileClasspath += main.output + test.output
+            runtimeClasspath += main.output + test.output
+            srcDir file('src/integration-test/java')
+        }
+        resources.srcDir file('src/integration-test/resources')
+    }
+
+    systemIntegrationTest {
+        java {
+            compileClasspath += main.output + test.output
+            runtimeClasspath += main.output + test.output
+            srcDir file('src/system-integration-test/java')
+        }
+        resources.srcDir file('src/system-integration-test/resources')
+    }
+}
+
+//Configures the compile and runtime configurations for our integration tests and includes the dependencies of the test task.
+configurations {
+    integrationTestCompile.extendsFrom testCompile
+    integrationTestRuntime.extendsFrom testRuntime
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    testImplementation('org.springframework.boot:spring-boot-starter-test') {
+        exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
+    }
+    integrationTestCompile 'org.assertj:assertj-core:3.0.0'
+}
+
+//Create the task that runs the system integration tests found from the configured source directory and uses the correct classpath.
+task systemIntegrationTest(type: Test) {
+    testClassesDirs = sourceSets.systemIntegrationTest.output.classesDirs
+    classpath = sourceSets.systemIntegrationTest.runtimeClasspath
+    //Integration tests will run every time when you invoke this task, comment the following line to stop it from executing every time
+    outputs.upToDateWhen { false }
+}
+
+//Create the task that runs the integration tests found from the configured source directory and uses the correct classpath.
+task integrationTest(type: Test) {
+    testClassesDirs = sourceSets.integrationTest.output.classesDirs
+    classpath = sourceSets.integrationTest.runtimeClasspath
+    //Integration tests will run every time when you invoke this task, comment the following line to stop it from executing every time
+    outputs.upToDateWhen { false }
+}
+
+test {
+    useJUnitPlatform()
+}
+
+//Ensure that the check task fails the build if there are failing integration tests.
+check.dependsOn integrationTest
+//Ensure that our unit tests are run before our integration tests
+integrationTest.mustRunAfter test
+
+
+
+
